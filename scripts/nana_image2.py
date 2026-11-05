@@ -36,7 +36,7 @@ if _SCRIPT_DIR not in sys.path:
     sys.path.insert(0, _SCRIPT_DIR)
 import psd_io
 
-VERSION = "1.3.0"
+VERSION = "1.3.1"
 MANIFEST_ENV = "NANA_IMAGE2_MANIFEST"
 USER_AGENT = "codex-nana_image2/1.0"
 DEFAULT_MODEL = "gpt-image-2.5-sunburst"
