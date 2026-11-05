@@ -79,8 +79,17 @@ if exist "%~dp0runtime-x64\python.exe" (
 )
 echo   [ok] installed to %DEST%
 
-rem ---- frozen third-party skills (vendor\) each land as their own skill ----
+rem ---- sibling raw-prompt skill ships in the same package ----
 set "SKILLDIRS=nana_image2"
+if exist "%~dp0raw-skill\SKILL.md" (
+    if exist "%USERPROFILE%\.codex\skills\nana_image2_raw" rmdir /s /q "%USERPROFILE%\.codex\skills\nana_image2_raw"
+    mkdir "%USERPROFILE%\.codex\skills\nana_image2_raw" >nul
+    copy /y raw-skill\SKILL.md "%USERPROFILE%\.codex\skills\nana_image2_raw\SKILL.md" >nul
+    set "SKILLDIRS=nana_image2 nana_image2_raw"
+    echo   [ok] installed sibling skill: nana_image2_raw ^(verbatim prompt mode^)
+)
+
+rem ---- frozen third-party skills (vendor\) each land as their own skill ----
 if exist "%~dp0vendor" (
     for /d %%D in ("%~dp0vendor\*") do (
         if exist "%%D\SKILL.md" (

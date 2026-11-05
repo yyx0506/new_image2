@@ -17,7 +17,7 @@ Use the bundled dependency-free client instead of the system `imagegen` CLI. It 
 
    Commands go through the bundled launcher (`scripts/run`, Windows `scripts\run.cmd`): it uses a system Python 3.9+ when present and otherwise the private runtime installed with the skill - no Python installation is required on the user's machine, and the launcher runs the interpreter with `-E -s` so developer environments (conda/pyenv) are never touched. On Python 3.9/3.10 the config parser falls back to a minimal TOML-subset reader; anything richer fails with a clear message.
 
-2. Handle the prompt in one of two modes (see "Prompt modes" below): beautify by default, verbatim when the user asks for it. Either way, report both the user's original words and the final prompt used.
+2. Beautify the user's request into a concise photographic prompt (see "Prompt handling"); verbatim requests belong to the sibling $nana_image2_raw skill.
 3. Generate or edit exactly once, explicitly passing the same `--model <selected-model>` used for doctor. A user request to create/edit an image authorizes that call; diagnostics alone do not authorize a billed smoke test.
 4. Read the output carefully. When an explicit size was requested, the client prints a final JSON verdict line: if it says `"degraded": true`, the upstream accepted the request but returned a different size/model (known sub2api silent downgrade, issues #6120/#3302/#7119) — report the ACTUAL size to the user along with the verdict's advice instead of claiming success. Inspect the saved image with `view_image`. Retry only for a specific defect the user asked to fix.
 5. Report the model, the user's original words, the final prompt actually sent, and the absolute saved path. For project assets, save under the project's `output/imagegen/` or the user-named path.
@@ -27,12 +27,11 @@ Streaming rules (important, both are workaround-driven):
 - `generate` streams automatically for slow jobs (quality high/xhigh/max, or explicit size ≥2MP such as 4K): slow generations can outrun the proxy's ~100s origin timeout (Cloudflare 524) unless bytes flow early. `--stream on|off` forces it; `--save-partials` keeps intermediate images from the stream.
 - `edit` NEVER streams. sub2api issue #8027: edits+stream returns 502 and the failover drains the whole account pool. This client sends no stream flag on the edits path — do not work around that by hand.
 
-## Prompt modes
+## Prompt handling (this skill = beautify)
 
-Two modes; pick by the user's wording:
+This skill beautifies: expand the user's idea into a full photographic prompt using the five rules that fight the "AI look": (1) 光 one single light source, soft and scattered; (2) 瑕 give every object one imperfection - rust, cracks, folds, wilt; (3) 机 camera anchors (35mm, f/4, handheld, a named film stock); (4) 灰 "overall muted, highlights not blown, shadow detail retained" beats mood adjectives; (5) 粒 film grain/noise as a realism signal. HARD GUARDRAIL: beautify may restructure and add physical detail, but the subject, style and composition intent must come from the user's own words - never swap or "improve" what they asked for.
 
-- **Beautify (default).** Expand the user's idea into a full photographic prompt using the five rules that fight the "AI look": (1) 光 one single light source, soft and scattered; (2) 瑕 give every object one imperfection - rust, cracks, folds, wilt; (3) 机 camera anchors (35mm, f/4, handheld, a named film stock); (4) 灰 "overall muted, highlights not blown, shadow detail retained" beats mood adjectives; (5) 粒 film grain/noise as a realism signal. HARD GUARDRAIL: beautify may restructure and add physical detail, but the subject, style and composition intent must come from the user's own words - never swap or "improve" what they asked for.
-- **Verbatim.** Triggered by phrases like 原样 / 按我的原话 / 不要改提示词 / 别美化 / verbatim / as-is / exact prompt. Pass the user's text to `--prompt` byte-for-byte (trim surrounding whitespace only, keep their language), add nothing, and say verbatim mode was used when reporting.
+When the user wants their prompt passed through EXACTLY as written (原样 / 逐字 / verbatim / as-is), that is the sibling skill's job: switch to `$nana_image2_raw` instead of changing modes here.
 
 ## Prompt routing
 
