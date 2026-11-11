@@ -36,7 +36,7 @@ if _SCRIPT_DIR not in sys.path:
     sys.path.insert(0, _SCRIPT_DIR)
 import psd_io
 
-VERSION = "1.4.0"
+VERSION = "1.5.0"
 MANIFEST_ENV = "NANA_IMAGE2_MANIFEST"
 USER_AGENT = "codex-nana_image2/1.0"
 DEFAULT_MODEL = "gpt-image-2.5-sunburst"
@@ -421,6 +421,39 @@ def fallback_target(requested: str, override: str | None) -> str:
     return "gpt-image-2.5-flare" if requested == DEFAULT_MODEL else DEFAULT_MODEL
 
 
+MODERATION_MARKERS = ("moderation_blocked", "moderation", "content_policy",
+                      "content_policy_violation", "safety_system", "sensitive_content")
+
+
+def is_moderation_block(detail: str) -> bool:
+    low = str(detail).lower()
+    return any(marker in low for marker in MODERATION_MARKERS)
+
+
+def save_error_report(paths, error: dict) -> None:
+    """Always leave an artifact behind - a failed paid call should never end
+    with 'nothing was saved'. No secrets, no prompt text beyond what the user
+    already provided on the command line."""
+    try:
+        report = dict(error)
+        report["ok"] = False
+        report["note"] = ("Provider safety filter rejected the request. This is "
+                          "upstream policy and is not retried or bypassed. Rephrase "
+                          "the prompt if this was unintended.")
+        for path in paths[:1]:
+            sidecar = path.with_name(path.stem + ".error.json")
+            sidecar.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+            print(f"error report: {sidecar.resolve()}", file=sys.stderr)
+    except OSError:
+        pass
+
+
+def fail_structured(error: dict) -> None:
+    """Machine-readable failure on stdout + exit 1."""
+    print(json.dumps({"ok": False, "error": error}, ensure_ascii=False))
+    raise SystemExit(1)
+
+
 def _model_unavailable(message: str) -> bool:
     low = message.lower()
     return any(marker in low for marker in (
@@ -518,6 +551,9 @@ def generate(args: argparse.Namespace) -> None:
                               "outputs": [str(path) for path in paths]}, ensure_ascii=False, indent=2))
             return
         try:
+            if getattr(args, "via", "images") == "tool":
+                run_tool_mode(args, payload, paths, base_url, headers)
+                return
             if use_stream:
                 events, json_doc = request_events(base_url + "/images/generations", headers, payload)
                 if events is not None:
@@ -540,6 +576,13 @@ def generate(args: argparse.Namespace) -> None:
                 result = request_json(base_url + "/images/generations", headers,
                                       json.dumps(payload).encode(), "application/json")
         except SystemExit as exc:
+            if is_moderation_block(str(exc)):
+                save_error_report(paths, {"type": "moderation_blocked", "model": model,
+                                           "detail": str(exc)[:400]})
+                fail_structured({"type": "moderation_blocked",
+                                 "message": "the provider's safety filter rejected this prompt",
+                                 "advice": "rephrase the prompt; safety blocks are upstream policy and are never retried or bypassed here",
+                                 "detail": str(exc)[:300]})
             # Loud one-shot fallback when the provider rejects the model itself.
             if model_fallback and model_fallback != model and _model_unavailable(str(exc)):
                 print(json.dumps({"fallback": {"requested": model, "used": model_fallback,
@@ -567,14 +610,24 @@ def edit(args: argparse.Namespace) -> None:
     paths = output_paths(args.out, args.n, args.output_format, args.force)
     while True:
         payload = common_payload(args, model=model)
-        if args.dry_run:
+        if args.dry_run and getattr(args, "via", "images") != "tool":
             print(json.dumps({"route": source, "endpoint": base_url + "/images/edits", "stream": False, "fields": payload, "model_fallback": model_fallback, "image": str(image), "mask": str(mask) if mask else None, "outputs": [str(path) for path in paths]}, ensure_ascii=False, indent=2))
             return
         fields = {key: str(value) for key, value in payload.items()}
         body, content_type = multipart(fields, [("image", image)] + ([("mask", mask)] if mask else []))
         try:
+            if getattr(args, "via", "images") == "tool":
+                run_tool_mode(args, payload, paths, base_url, headers, image_path=image)
+                return
             result = request_json(base_url + "/images/edits", headers, body, content_type)
         except SystemExit as exc:
+            if is_moderation_block(str(exc)):
+                save_error_report(paths, {"type": "moderation_blocked", "model": model,
+                                           "detail": str(exc)[:400]})
+                fail_structured({"type": "moderation_blocked",
+                                 "message": "the provider's safety filter rejected this prompt",
+                                 "advice": "rephrase the prompt; safety blocks are upstream policy and are never retried or bypassed here",
+                                 "detail": str(exc)[:300]})
             if model_fallback and model_fallback != model and _model_unavailable(str(exc)):
                 print(json.dumps({"fallback": {"requested": model, "used": model_fallback,
                                                "reason": f"provider rejected the model: {str(exc)[:140]}"}},
@@ -637,6 +690,157 @@ def check_upgrade(args: argparse.Namespace) -> None:
     }, ensure_ascii=False, indent=2))
     if not available:
         print(f"You are up to date ({VERSION}).")
+
+
+def tool_mode_body(driver: str, payload: dict[str, Any], image_data_url: str | None = None) -> dict[str, Any]:
+    """Request shape that puts size/quality INSIDE the image tool config -
+    the route upstream historically honours (see codex-image-4k)."""
+    content: list[dict[str, Any]] = [{"type": "input_text", "text": payload["prompt"]}]
+    if image_data_url:
+        content.append({"type": "input_image", "image_url": image_data_url, "detail": "auto"})
+    tool = {"type": "image_generation", "model": payload.get("model", DEFAULT_MODEL),
+            "size": payload.get("size") or "auto", "quality": payload.get("quality") or "auto",
+            "output_format": payload.get("output_format") or "png"}
+    if payload.get("background"):
+        tool["background"] = payload["background"]
+    return {"model": driver, "input": [{"role": "user", "content": content}],
+            "instructions": "You are an image generation assistant.",
+            "tools": [tool], "tool_choice": {"type": "image_generation"},
+            "stream": True, "store": False}
+
+
+def resolve_driver(args: argparse.Namespace, base_url: str, headers: dict[str, str]) -> str:
+    """Text model that drives the image tool. --driver-model wins; otherwise
+    auto-pick the first plain gpt text model the provider lists."""
+    explicit = getattr(args, "driver_model", None)
+    if explicit:
+        return explicit
+    try:
+        result = request_json(base_url + "/models", headers)
+        ids = [item.get("id") for item in result.get("data", []) if isinstance(item, dict)]
+    except SystemExit:
+        ids = []
+    for model_id in ids:
+        if model_id and model_id.startswith("gpt-") and not any(
+                marker in model_id for marker in
+                ("image", "audio", "realtime", "review", "chat-latest", "embed", "mini")):
+            return model_id
+    return "gpt-5.2"
+
+
+def tool_mode_fetch(url: str, headers: dict[str, str], body: dict[str, Any]) -> str:
+    request = urllib.request.Request(
+        url, data=json.dumps(body).encode(),
+        headers={**headers, "Content-Type": "application/json", "Accept": "text/event-stream"},
+        method="POST")
+    try:
+        with urllib.request.urlopen(request, timeout=600) as response:
+            return response.read().decode("utf-8", "replace")
+    except urllib.error.HTTPError as exc:
+        detail = exc.read(4000).decode("utf-8", "replace").strip()
+        fail(f"HTTP {exc.code} from {url}: {detail or exc.reason}")
+    except (urllib.error.URLError, TimeoutError, OSError) as exc:
+        fail(f"Could not reach {url}: {exc}")
+    return ""
+
+
+def harvest_tool_mode(text: str) -> tuple[list[bytes], dict[str, Any]]:
+    """Pull (image_bytes, upstream_echo) out of a tool-mode response,
+    SSE events first, then a raw-JSON regex fallback."""
+    images: list[bytes] = []
+    echo: dict[str, Any] = {}
+    for line in text.splitlines():
+        if not line.startswith("data:"):
+            continue
+        payload = line[5:].strip()
+        if not payload or payload == "[DONE]":
+            continue
+        try:
+            evt = json.loads(payload)
+        except ValueError:
+            continue
+        error = evt.get("error")
+        if isinstance(error, dict):
+            fail(f"Stream error event: {json.dumps(error, ensure_ascii=False)[:400]}")
+        candidates: list[Any] = []
+        item = evt.get("item") or evt.get("output_item") or {}
+        if isinstance(item, dict):
+            candidates.append(item)
+        output = evt.get("output")
+        if isinstance(output, list):
+            candidates.extend(entry for entry in output if isinstance(entry, dict))
+        if isinstance(evt.get("data"), list):
+            candidates.extend(entry for entry in evt["data"] if isinstance(entry, dict))
+        for cand in candidates:
+            if cand.get("type") not in ("image_generation_call", "image_generation"):
+                continue
+            if not echo:
+                echo = {key: cand[key] for key in ("model", "size", "quality") if cand.get(key)}
+            result = cand.get("result")
+            if isinstance(result, str) and len(result) > 200:
+                try:
+                    images.append(base64.b64decode(result))
+                except (ValueError, TypeError):
+                    pass
+    if not images and '"image_generation_call"' in text:
+        for match in re.finditer(r'"result"\s*:\s*"([A-Za-z0-9+/=]{300,})"', text):
+            try:
+                images.append(base64.b64decode(match.group(1)))
+            except (ValueError, TypeError):
+                continue
+    return images, echo
+
+
+def run_tool_mode(args, payload, paths, base_url, headers, image_path=None) -> None:
+    """One tool-mode attempt: request, harvest, save, verify size, correct locally."""
+    if getattr(args, "n", 1) != 1:
+        fail("--via tool supports n=1 only.")
+    data_url = None
+    if image_path is not None:
+        if args.mask:
+            fail("mask editing is not supported with --via tool; use the default transport.")
+        raw = image_path.read_bytes()
+        if len(raw) > MAX_INPUT_BYTES:
+            fail(f"Input exceeds 50 MB: {image_path}")
+        mime = mimetypes.guess_type(image_path.name)[0] or "image/png"
+        data_url = f"data:{mime};base64," + base64.b64encode(raw).decode()
+    driver = resolve_driver(args, base_url, headers)
+    body = tool_mode_body(driver, payload, data_url)
+    if args.dry_run:
+        print(json.dumps({"endpoint": base_url + "/responses", "driver_model": driver,
+                          "body": body, "outputs": [str(path) for path in paths]},
+                         ensure_ascii=False, indent=2))
+        return
+    raw_text = tool_mode_fetch(base_url + "/responses", headers, body)
+    images, echo = harvest_tool_mode(raw_text)
+    if not images:
+        fail("Tool-mode response contained no image_generation_call result.")
+    content = images[0]
+    atomic_write(paths[0], content)
+    print(paths[0].resolve())
+    requested = str(payload.get("size") or "auto").lower()
+    actual = detect_png_size(content) or "?"
+    if requested != "auto" and actual != requested:
+        try:
+            width, height = map(int, requested.split("x"))
+            src_w, src_h, rgba = psd_io.read_png(paths[0])
+            resized = psd_io.resize_rgba(rgba, src_w, src_h, width, height)
+            psd_io.write_png(paths[0], width, height, resized)
+            print(json.dumps({"corrected": {"requested": requested, "upstream_actual": actual,
+                                            "method": "local bilinear resize",
+                                            "note": "the file on disk matches the requested size"}},
+                             ensure_ascii=False))
+        except (ValueError, OSError, psd_io.PsdError):
+            pass
+    verdict = None
+    if requested != "auto" and echo.get("size") and str(echo["size"]).lower() not in (requested, "auto"):
+        verdict = {"degraded": True, "requested": requested, "actual": echo["size"],
+                   "advice": "upstream echoed a different size; the local file was corrected to the request"}
+    if echo.get("model") and payload.get("model") and echo["model"] != payload["model"]:
+        verdict = verdict or {"degraded": True}
+        verdict["model_echo"] = echo["model"]
+    if verdict:
+        print(json.dumps(verdict, ensure_ascii=False))
 
 
 # --------------------------------------------------------------------------
@@ -763,6 +967,12 @@ def parser() -> argparse.ArgumentParser:
     # so edit intentionally gets no --stream flag at all.
     for name in ("generate", "edit"):
         command = commands.choices[name]
+        command.add_argument("--via", choices=("images", "tool"), default="images",
+                             help="transport: images API (default) or /v1/responses with the full "
+                                  "parameter set inside the image tool config (tool) - the route "
+                                  "upstream historically honours; tool mode is n=1 only.")
+        command.add_argument("--driver-model", metavar="MODEL", default=None,
+                             help="tool mode only: text model driving the image tool (auto-picked by default).")
         command.add_argument("--fallback", metavar="MODEL", default=None,
                              help="Model to fall back to when the requested one is unavailable "
                                   "(default: the other 2.5 sibling).")

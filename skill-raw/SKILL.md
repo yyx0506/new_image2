@@ -30,6 +30,10 @@ If that launcher is missing, tell the user to re-install the nana_image2 package
 3. Read the last JSON line of the output: `"degraded": true` means the upstream downgraded size/model - report the ACTUAL output. A `"fallback"` line means the requested model was unavailable and the CLI switched once - report which model actually produced the image.
 4. Report: raw mode was used, the prompt (unchanged), the model, the absolute saved path. Show the saved image.
 
+## Safety blocks
+
+`moderation_blocked` (structured JSON + `.error.json` sidecar) = the provider rejected the prompt. Say so verbatim, suggest the user rephrase. Never retry or evade. `--via tool` from the main skill is available here too for exact-size needs.
+
 ## Model routing
 
 - Default: `gpt-image-2.5-sunburst`. An explicitly requested model (Flare / Sunburst / full ID / anything the provider lists) is preserved; the CLI's loud fallback rules apply unchanged.

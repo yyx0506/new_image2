@@ -655,3 +655,55 @@ def compose_from_pngs(entries, out_path: Path) -> dict:
         layers.append({"name": name, "rgba": bytes(rgba), "visible": True, "opacity": 255})
     write_psd(out_path, canvas[0], canvas[1], layers)
     return {"canvas": f"{canvas[0]}x{canvas[1]}", "layers": len(layers), "out": str(out_path)}
+
+
+def resize_rgba(data, width: int, height: int, target_w: int, target_h: int) -> bytearray:
+    """Bilinear-resize an RGBA buffer (length w*h*4) to the target canvas.
+
+    numpy path is instant; the pure-stdlib fallback is a straightforward
+    bilinear sampler (a few seconds on megapixel images) so the feature
+    works everywhere. Alpha is resampled like any other channel.
+    """
+    if width == target_w and height == target_h:
+        return bytearray(data)
+    if _np is not None:
+        arr = _np.frombuffer(bytes(data), dtype=_np.uint8).reshape(height, width, 4).astype(_np.float32)
+        ys = (_np.arange(target_h, dtype=_np.float32) * (height - 1) / max(1, target_h - 1))
+        xs = (_np.arange(target_w, dtype=_np.float32) * (width - 1) / max(1, target_w - 1))
+        y0 = _np.clip(_np.floor(ys).astype(_np.int32), 0, height - 1)
+        x0 = _np.clip(_np.floor(xs).astype(_np.int32), 0, width - 1)
+        y1 = _np.minimum(y0 + 1, height - 1)
+        x1 = _np.minimum(x0 + 1, width - 1)
+        wy = (ys - y0).astype(_np.float32)[:, None, None]
+        wx = (xs - x0).astype(_np.float32)[None, :, None]
+        top = arr[y0][:, x0] * (1 - wx) + arr[y0][:, x1] * wx
+        bottom = arr[y1][:, x0] * (1 - wx) + arr[y1][:, x1] * wx
+        out = top * (1 - wy) + bottom * wy
+        return bytearray(_np.clip(_np.round(out), 0, 255).astype(_np.uint8).tobytes())
+
+    xmap = []
+    for tx in range(target_w):
+        sx = tx * (width - 1) / max(1, target_w - 1)
+        x0 = int(sx)
+        x0 = min(x0, width - 2) if width > 1 else 0
+        xmap.append((x0, sx - x0))
+    out = bytearray(target_w * target_h * 4)
+    for ty in range(target_h):
+        sy = ty * (height - 1) / max(1, target_h - 1)
+        y0 = int(sy)
+        y0 = min(y0, height - 2) if height > 1 else 0
+        fy = sy - y0
+        row0 = y0 * width * 4
+        row1 = row0 + (width * 4 if height > 1 else 0)
+        obase = ty * target_w * 4
+        for tx, (x0, fx) in enumerate(xmap):
+            i0 = row0 + x0 * 4
+            i1 = i0 + 4
+            j0 = row1 + x0 * 4
+            j1 = j0 + 4
+            o = obase + tx * 4
+            for c in range(4):
+                top = data[i0 + c] + (data[i1 + c] - data[i0 + c]) * fx
+                bottom = data[j0 + c] + (data[j1 + c] - data[j0 + c]) * fx
+                out[o + c] = int(top + (bottom - top) * fy + 0.5) & 0xFF
+    return out

@@ -16,6 +16,9 @@
 - **PSD 图层工作流（毫秒级）**：列出图层、导出指定图层为 PNG 喂给生成/编辑、把多张生成图合成为新的分层 PSD（Photoshop / Photopea / Krita / Affinity 均可打开）。
 - **4K 双保险**：慢任务（high/xhigh/max 质量或 ≥2MP 显式尺寸）的 `generate` 自动改用流式，规避 Cloudflare 524 超时；`edit` 永不流式（规避 sub2api [#8027](https://github.com/Wei-Shaw/sub2api/issues/8027) 的 502+号池耗尽）。
 - **内网升级检查**：`version` / `upgrade` 子命令读取管理员维护的**内网清单**（JSON，URL 或共享路径，绝不访问 GitHub），提示新版下载地址；第三方技能以冻结版本进包（`make_dist --vendor`，自动记录 git commit），升级节奏完全由管理员掌控（见 `docs/internal-distribution.md`）。
+- **tool 传输模式**（v1.5）：`--via tool` 把 model/size/quality 放进 `/v1/responses` 的图像工具配置（上游尊重参数的那条路），出图尺寸不符时**本地双线性纠偏**并明示 `corrected`；n=1，驱动文本模型自动选择。
+- **安全拦截结构化**（v1.5）：`moderation_blocked` 时输出机器可读 JSON + 在输出旁落 `.error.json` 报告（不再"什么都不留"）；绝不自动重试或规避过滤。
+- **$nana_image2_psd 专职拆图技能**（v1.5）：设计师点名的 PSD 拆解/合成入口，与主技能同包安装。
 - **模型自选 + 响亮回退**：`--model` 可填任意模型；供应商没有该模型（不在列表或返回 model_not_found）时自动改用默认姊妹型号重试一次，并输出 `fallback` JSON 说明——绝不静默换型；`--no-fallback` 可恢复严格模式。
 - **降级明确判定**：显式请求尺寸时校验实际输出，发现被上游静默降级（[#6120](https://github.com/Wei-Shaw/sub2api/issues/6120)/[#3302](https://github.com/Wei-Shaw/sub2api/issues/3302)/[#7119](https://github.com/Wei-Shaw/sub2api/issues/7119)）时输出 `degraded: true` 的 JSON 判定与建议，不再只给一句 warning。
 - 仅依赖 Python 标准库，不安装 OpenAI SDK。
@@ -83,6 +86,7 @@ $nana_image2 使用 gpt-image-2.5-sunburst，纯文字生成一张像素风海�
 | --- | --- | --- |
 | `$nana_image2` | 默认出图 | **AI 美化**：按五条去 AI 感准则扩写（单一光源/物体带瑕疵/相机锚点/克制曝光/胶片颗粒），主体与意图严格来自你的原话；生成后同时展示原话与最终提示词 |
 | `$nana_image2_raw` | 原样出图 | **逐字透传**：你的话原封不动进模型，一个字不加、不翻译、不润色 |
+| `$nana_image2_psd` | PSD 拆解/合成 | 专职工具箱：列层、逐层导出、合成新 PSD，可与生图联动 |
 
 在 Codex 里点名即可，例如"用 nana_image2_raw 按我这段话原样出图"。
 

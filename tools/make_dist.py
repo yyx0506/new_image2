@@ -148,11 +148,12 @@ def build(layout: dict, runtimes: dict, output_dir: Path, vendors: list | None =
             for target, archive in runtimes.items():
                 print(f"  bundling {target}/ from {archive.name} ...")
                 extract_runtime(archive, pkg / target)
-        raw_skill = ROOT / "skill-raw" / "SKILL.md"
-        if raw_skill.is_file():
-            target = pkg / "raw-skill"
-            target.mkdir()
-            shutil.copy2(raw_skill, target / "SKILL.md")
+        for folder, name in (("skill-raw", "raw-skill"), ("skill-psd", "psd-skill")):
+            skill = ROOT / folder / "SKILL.md"
+            if skill.is_file():
+                target = pkg / name
+                target.mkdir()
+                shutil.copy2(skill, target / "SKILL.md")
         if vendors:
             lines = ["# Frozen third-party skills bundled into this package.",
                      "# Upgrade = admin pulls a newer pin, re-runs make_dist, republishes.",

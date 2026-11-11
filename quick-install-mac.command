@@ -67,15 +67,18 @@ if [ -d runtime ] || [ -d runtime-x64 ]; then
 fi
 ok "installed to $DEST"
 
-# ---- sibling raw-prompt skill ships in the same package ----
+# ---- sibling skills ship in the same package ----
 INSTALLED="nana_image2"
-if [ -d raw-skill ]; then
-    rm -rf "$HOME/.codex/skills/nana_image2_raw"
-    mkdir -p "$HOME/.codex/skills/nana_image2_raw"
-    cp raw-skill/SKILL.md "$HOME/.codex/skills/nana_image2_raw/SKILL.md"
-    INSTALLED="nana_image2 nana_image2_raw"
-    ok "installed sibling skill: nana_image2_raw (verbatim prompt mode)"
-fi
+for pair in "raw-skill:nana_image2_raw" "psd-skill:nana_image2_psd"; do
+    dir="${pair%%:*}"; name="${pair##*:}"
+    if [ -f "$dir/SKILL.md" ]; then
+        rm -rf "$HOME/.codex/skills/$name"
+        mkdir -p "$HOME/.codex/skills/$name"
+        cp "$dir/SKILL.md" "$HOME/.codex/skills/$name/SKILL.md"
+        INSTALLED="$INSTALLED $name"
+        ok "installed sibling skill: $name"
+    fi
+done
 
 # ---- frozen third-party skills (vendor/) each land as their own skill ----
 if [ -d vendor ]; then

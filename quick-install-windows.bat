@@ -79,14 +79,18 @@ if exist "%~dp0runtime-x64\python.exe" (
 )
 echo   [ok] installed to %DEST%
 
-rem ---- sibling raw-prompt skill ships in the same package ----
+rem ---- sibling skills ship in the same package ----
 set "SKILLDIRS=nana_image2"
-if exist "%~dp0raw-skill\SKILL.md" (
-    if exist "%USERPROFILE%\.codex\skills\nana_image2_raw" rmdir /s /q "%USERPROFILE%\.codex\skills\nana_image2_raw"
-    mkdir "%USERPROFILE%\.codex\skills\nana_image2_raw" >nul
-    copy /y raw-skill\SKILL.md "%USERPROFILE%\.codex\skills\nana_image2_raw\SKILL.md" >nul
-    set "SKILLDIRS=nana_image2 nana_image2_raw"
-    echo   [ok] installed sibling skill: nana_image2_raw ^(verbatim prompt mode^)
+for %%P in ("raw-skill=nana_image2_raw" "psd-skill=nana_image2_psd") do (
+    for /f "tokens=1,2 delims==" %%A in (%%P) do (
+        if exist "%~dp0%%A\SKILL.md" (
+            if exist "%USERPROFILE%\.codex\skills\%%B" rmdir /s /q "%USERPROFILE%\.codex\skills\%%B"
+            mkdir "%USERPROFILE%\.codex\skills\%%B" >nul
+            copy /y "%~dp0%%A\SKILL.md" "%USERPROFILE%\.codex\skills\%%B\SKILL.md" >nul
+            set "SKILLDIRS=!SKILLDIRS! %%B"
+            echo   [ok] installed sibling skill: %%B
+        )
+    )
 )
 
 rem ---- frozen third-party skills (vendor\) each land as their own skill ----

@@ -33,6 +33,15 @@ This skill beautifies: expand the user's idea into a full photographic prompt us
 
 When the user wants their prompt passed through EXACTLY as written (原样 / 逐字 / verbatim / as-is), that is the sibling skill's job: switch to `$nana_image2_raw` instead of changing modes here.
 
+## Transport modes
+
+- Default (`--via images`): the Images API endpoints. Best general compatibility.
+- `--via tool`: the request goes to `/v1/responses` with model/size/quality/output_format placed INSIDE the image tool config - the route upstream historically honours explicit parameters (same shape as codex-image-4k). Use it when the user needs exact dimensions or reports size drift on the default transport; n=1 only; a text driver model is auto-picked (override with --driver-model). If the returned image still misses the requested size, the client corrects it locally (bilinear resize) and prints a `corrected` note - report the correction.
+
+## Safety blocks
+
+A `moderation_blocked` response (structured JSON + an `.error.json` sidecar next to the output path) means the provider's safety filter rejected the prompt. Tell the user plainly which prompt was flagged and suggest rephrasing. Never retry automatically, never attempt to evade the filter - that is upstream policy.
+
 ## Prompt routing
 
 - An explicit Flare, Sunburst, full model ID, or dated snapshot requested by the user takes precedence over inferred intent. Map Flare to `gpt-image-2.5-flare` and Sunburst to `gpt-image-2.5-sunburst`; preserve explicitly requested full IDs/snapshots.
