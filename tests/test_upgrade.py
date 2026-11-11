@@ -12,7 +12,7 @@ from unittest import TestCase
 import unittest
 
 SCRIPTS = Path(__file__).parents[1] / "scripts"
-spec = importlib.util.spec_from_file_location("image_client", SCRIPTS / "nana_image2.py")
+spec = importlib.util.spec_from_file_location("image_client", SCRIPTS / "new_image2.py")
 client = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(client)
 
@@ -70,13 +70,13 @@ class TestUpgradeCommand(TestCase):
 
     def test_no_source_configured_fails_clearly(self):
         import os
-        saved = os.environ.pop("NANA_IMAGE2_MANIFEST", None)
+        saved = os.environ.pop("NEW_IMAGE2_MANIFEST", None)
         try:
             with self.assertRaises(SystemExit):
                 self.run_upgrade(None)
         finally:
             if saved:
-                os.environ["NANA_IMAGE2_MANIFEST"] = saved
+                os.environ["NEW_IMAGE2_MANIFEST"] = saved
 
 
 if __name__ == "__main__":

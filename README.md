@@ -1,8 +1,8 @@
-# nana_image2
+# new_image2
 
-![GPT Image 2.5：Sunburst 精细编辑、Flare 快速生图，支持 auth.json 回退和 uv 启动](assets/nana_image2-hero-2.5-workshops.png)
+![GPT Image 2.5：Sunburst 精细编辑、Flare 快速生图，支持 auth.json 回退和 uv 启动](assets/new_image2-hero-2.5-workshops.png)
 
-> 来源仓库：https://github.com/yyx0506/nana_image2
+> 来源仓库：https://github.com/yyx0506/new_image2
 > 内置：PSD 图层处理（`psd-layers` / `psd-export` / `psd-compose`，纯标准库）、
 > Python 3.9+ 兼容、4K 流式与降级判定、以及给非技术同事用的双平台一键安装/卸载脚本。
 
@@ -18,7 +18,7 @@
 - **内网升级检查**：`version` / `upgrade` 子命令读取管理员维护的**内网清单**（JSON，URL 或共享路径，绝不访问 GitHub），提示新版下载地址；第三方技能以冻结版本进包（`make_dist --vendor`，自动记录 git commit），升级节奏完全由管理员掌控（见 `docs/internal-distribution.md`）。
 - **tool 传输模式**（v1.5）：`--via tool` 把 model/size/quality 放进 `/v1/responses` 的图像工具配置（上游尊重参数的那条路），出图尺寸不符时**本地双线性纠偏**并明示 `corrected`；n=1，驱动文本模型自动选择。
 - **安全拦截结构化**（v1.5）：`moderation_blocked` 时输出机器可读 JSON + 在输出旁落 `.error.json` 报告（不再"什么都不留"）；绝不自动重试或规避过滤。
-- **$nana_image2_psd 专职拆图技能**（v1.5）：设计师点名的 PSD 拆解/合成入口，与主技能同包安装。
+- **$new_image2_psd 专职拆图技能**（v1.5）：设计师点名的 PSD 拆解/合成入口，与主技能同包安装。
 - **模型自选 + 响亮回退**：`--model` 可填任意模型；供应商没有该模型（不在列表或返回 model_not_found）时自动改用默认姊妹型号重试一次，并输出 `fallback` JSON 说明——绝不静默换型；`--no-fallback` 可恢复严格模式。
 - **降级明确判定**：显式请求尺寸时校验实际输出，发现被上游静默降级（[#6120](https://github.com/Wei-Shaw/sub2api/issues/6120)/[#3302](https://github.com/Wei-Shaw/sub2api/issues/3302)/[#7119](https://github.com/Wei-Shaw/sub2api/issues/7119)）时输出 `degraded: true` 的 JSON 判定与建议，不再只给一句 warning。
 - 仅依赖 Python 标准库，不安装 OpenAI SDK。
@@ -34,25 +34,25 @@
 
 ### 方式一：自包含安装包（推荐给非技术同事，无需 git、无需装 Python）
 
-从 [Releases](https://github.com/yyx0506/nana_image2/releases) 下载对应平台的包，解压后双击：
+从 [Releases](https://github.com/yyx0506/new_image2/releases) 下载对应平台的包，解压后双击：
 
 | 安装包 | 适用 | 大小 |
 | --- | --- | --- |
-| `nana_image2-windows-x64.zip` | Windows（内置私有 Python 运行时） | ~25MB |
-| `nana_image2-macos-apple-silicon.zip` | macOS M 系列（M1-M4，内置 arm64 运行时） | ~40MB |
-| `nana_image2-macos-intel.zip` | macOS Intel 机型（内置 x86_64 运行时） | ~40MB |
+| `new_image2-windows-x64.zip` | Windows（内置私有 Python 运行时） | ~25MB |
+| `new_image2-macos-apple-silicon.zip` | macOS M 系列（M1-M4，内置 arm64 运行时） | ~40MB |
+| `new_image2-macos-intel.zip` | macOS Intel 机型（内置 x86_64 运行时） | ~40MB |
 
 解压后双击 `quick-install-windows.bat` / `quick-install-mac.command` 即可。
 
 **Python 说明（对研发友好）**：优先使用系统 Python 3.9+（研发自己的 conda/pyenv/官方 Python 照常用，互不干扰）；没有 Python 的机器自动使用包内私有的便携运行时——它只存在于技能文件夹内部、仅以绝对路径调用（`-E -s` 隔离模式，忽略外部 PYTHONPATH/用户 site-packages），**不写 PATH、不写注册表、不装任何东西**，卸载即整体消失。安装包用 `python3 tools/make_dist.py` 构建。
 
-安装只是把 Skill 拷贝到 `~/.codex/skills/nana_image2/`，**不修改任何 Codex 配置**；卸载（`quick-uninstall-*`）就是删掉这个文件夹，机器恢复原样。
+安装只是把 Skill 拷贝到 `~/.codex/skills/new_image2/`，**不修改任何 Codex 配置**；卸载（`quick-uninstall-*`）就是删掉这个文件夹，机器恢复原样。
 
 ### 方式二：git clone
 
 ```bash
 mkdir -p ~/.codex/skills
-git clone https://github.com/yyx0506/nana_image2.git ~/.codex/skills/nana_image2
+git clone https://github.com/yyx0506/new_image2.git ~/.codex/skills/new_image2
 ```
 
 仓库根目录就是 Skill 根目录，不需要绑定或创建专属 Agent。重启 Codex 或开启一个新任务即可使用。
@@ -62,17 +62,17 @@ git clone https://github.com/yyx0506/nana_image2.git ~/.codex/skills/nana_image2
 在提示词中指定模型，Codex 会把选择转换为客户端的 `--model` 参数：
 
 ```text
-$nana_image2 用 Flare 快速生成一张雨夜霓虹街道的横版图片
+$new_image2 用 Flare 快速生成一张雨夜霓虹街道的横版图片
 ```
 
 ```text
-$nana_image2 用 Sunburst 编辑 input.png，只把背景换成日落，主体和文字保持不变
+$new_image2 用 Sunburst 编辑 input.png，只把背景换成日落，主体和文字保持不变
 ```
 
 也可以直接写完整模型名，例如：
 
 ```text
-$nana_image2 使用 gpt-image-2.5-sunburst，纯文字生成一张像素风海报，不使用参考图
+$new_image2 使用 gpt-image-2.5-sunburst，纯文字生成一张像素风海报，不使用参考图
 ```
 
 | 提示词意图 | Codex 传入的模型 |
@@ -84,11 +84,13 @@ $nana_image2 使用 gpt-image-2.5-sunburst，纯文字生成一张像素风海�
 
 | 技能 | 用途 | 提示词处理 |
 | --- | --- | --- |
-| `$nana_image2` | 默认出图 | **AI 美化**：按五条去 AI 感准则扩写（单一光源/物体带瑕疵/相机锚点/克制曝光/胶片颗粒），主体与意图严格来自你的原话；生成后同时展示原话与最终提示词 |
-| `$nana_image2_raw` | 原样出图 | **逐字透传**：你的话原封不动进模型，一个字不加、不翻译、不润色 |
-| `$nana_image2_psd` | PSD 拆解/合成 | 专职工具箱：列层、逐层导出、合成新 PSD，可与生图联动 |
+| `$new_image2` | 默认出图 | **AI 美化**：按五条去 AI 感准则扩写（单一光源/物体带瑕疵/相机锚点/克制曝光/胶片颗粒），主体与意图严格来自你的原话；生成后同时展示原话与最终提示词 |
+| `$new_image2_raw` | 原样出图 | **逐字透传**：你的话原封不动进模型，一个字不加、不翻译、不润色 |
+| `$new_image2_psd` | PSD 拆解/合成 | 专职工具箱：列层、逐层导出、合成新 PSD，可与生图联动 |
 
-在 Codex 里点名即可，例如"用 nana_image2_raw 按我这段话原样出图"。
+在 Codex 里点名即可，例如"用 new_image2_raw 按我这段话原样出图"。
+
+美化模式内置 **8 个风格方向**（可点名，不点名则按内容推断，默认写实纪实）：写实纪实 / 电影感 / 商业产品 / 人像写真 / 插画扁平 / 3D 渲染 / 国风水墨 / 老照片胶片——例如"用电影感方向画一段雨夜霓虹"。
 
 | 未指定型号，也没有明确偏好 | `gpt-image-2.5-sunburst`（默认） |
 
@@ -97,14 +99,14 @@ $nana_image2 使用 gpt-image-2.5-sunburst，纯文字生成一张像素风海�
 Codex 当前显式调用 Skill 使用 `$skill-name`；不需要手动执行底层 Python 命令。只有排查 provider 连通性时才需要：
 
 ```bash
-python3 ~/.codex/skills/nana_image2/scripts/nana_image2.py doctor
+python3 ~/.codex/skills/new_image2/scripts/new_image2.py doctor
 ```
 
 没有合适的 Python 时，可直接使用 uv；脚本已声明 Python 版本，uv 会自动准备解释器（首次可能需要下载），无需安装 SDK：
 
 ```bash
-uv run ~/.codex/skills/nana_image2/scripts/nana_image2.py doctor
-uv run ~/.codex/skills/nana_image2/scripts/nana_image2.py generate --model gpt-image-2.5-flare --prompt "雨夜霓虹街道" --out output/imagegen/street.png
+uv run ~/.codex/skills/new_image2/scripts/new_image2.py doctor
+uv run ~/.codex/skills/new_image2/scripts/new_image2.py generate --model gpt-image-2.5-flare --prompt "雨夜霓虹街道" --out output/imagegen/street.png
 ```
 
 `generate`、`edit`、`doctor` 均通过 `--model` 选择完整模型名，无需额外分型参数：
@@ -128,17 +130,17 @@ uv run ~/.codex/skills/nana_image2/scripts/nana_image2.py generate --model gpt-i
 
 ```bash
 # 1. 列出图层：名称 / 序号 / 位置 / 可见性 / 是否有像素数据
-python3 scripts/nana_image2.py psd-layers poster.psd
+python3 scripts/new_image2.py psd-layers poster.psd
 
 # 2. 导出指定图层为 PNG（喂给 edit 做参考图；--all --outdir DIR 导出全部）
-python3 scripts/nana_image2.py psd-export poster.psd --name 背景 --out output/bg.png
+python3 scripts/new_image2.py psd-export poster.psd --name 背景 --out output/bg.png
 
 # 3. 生成/编辑（走正常付费链路）
-python3 scripts/nana_image2.py edit --image output/bg.png \
+python3 scripts/new_image2.py edit --image output/bg.png \
   --model gpt-image-2.5-sunburst --prompt "换成夕阳背景" --out output/bg-new.png
 
 # 4. 合成新的分层 PSD（底层在前；原文件永不被修改）
-python3 scripts/nana_image2.py psd-compose \
+python3 scripts/new_image2.py psd-compose \
   --layer "背景=output/bg-new.png" --layer "产品=output/product.png" --out output/poster-v2.psd
 ```
 
@@ -186,7 +188,7 @@ python3 scripts/nana_image2.py psd-compose \
 
 ## License
 
-本项目采用 [MIT License](LICENSE)。来源仓库：[yyx0506/nana_image2](https://github.com/yyx0506/nana_image2)。
+本项目采用 [MIT License](LICENSE)。来源仓库：[yyx0506/new_image2](https://github.com/yyx0506/new_image2)。
 
 ## 本地验证
 

@@ -1,27 +1,27 @@
 ---
-name: "nana_image2_raw"
+name: "new_image2_raw"
 description: "Generate images through the current Codex provider with the user's prompt EXACTLY as written - no rewriting, no beautification, nothing added. Use when the user asks for 原样/逐字/不要改提示词/别美化/verbatim/as-is, or explicitly names this skill."
 ---
 
-# nana_image2 raw mode
+# new_image2 raw mode
 
 One hard rule: **`--prompt` receives the user's words byte-for-byte.** Trim surrounding whitespace only. Keep their language (Chinese stays Chinese). Do not translate, expand, "improve", or restructure. If you feel the prompt is weak, say so in your reply - do NOT fix it silently.
 
-This skill reuses the sibling nana_image2 installation (same installer, same CLI):
+This skill reuses the sibling new_image2 installation (same installer, same CLI):
 
-- macOS / Linux: `"$HOME/.codex/skills/nana_image2/scripts/run"`
-- Windows: `"%USERPROFILE%\.codex\skills\nana_image2\scripts\run.cmd"`
+- macOS / Linux: `"$HOME/.codex/skills/new_image2/scripts/run"`
+- Windows: `"%USERPROFILE%\.codex\skills\new_image2\scripts\run.cmd"`
 
-If that launcher is missing, tell the user to re-install the nana_image2 package (both skills ship together).
+If that launcher is missing, tell the user to re-install the new_image2 package (both skills ship together).
 
 ## Workflow
 
 1. (Optional, free) connectivity check with the selected model:
-   `"$HOME/.codex/skills/nana_image2/scripts/run" doctor --model gpt-image-2.5-sunburst`
+   `"$HOME/.codex/skills/new_image2/scripts/run" doctor --model gpt-image-2.5-sunburst`
 2. Generate or edit exactly once, passing the user's text verbatim:
 
 ```bash
-"$HOME/.codex/skills/nana_image2/scripts/run" generate \
+"$HOME/.codex/skills/new_image2/scripts/run" generate \
   --model gpt-image-2.5-sunburst \
   --prompt "<the user's exact words>" \
   --out /absolute/path/output.png

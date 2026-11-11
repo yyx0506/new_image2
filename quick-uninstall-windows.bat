@@ -1,12 +1,12 @@
 @echo off
 rem =========================================================================
-rem  nana_image2 - one-click rollback (Windows)
-rem  Deletes %USERPROFILE%\.codex\skills\nana_image2. Nothing else is
+rem  new_image2 - one-click rollback (Windows)
+rem  Deletes %USERPROFILE%\.codex\skills\new_image2. Nothing else is
 rem  touched: the skill only ever READS the Codex config, so there is
 rem  nothing to undo.
 rem =========================================================================
 setlocal
-set "DEST=%USERPROFILE%\.codex\skills\nana_image2"
+set "DEST=%USERPROFILE%\.codex\skills\new_image2"
 
 if exist "%DEST%" (
     if exist "%DEST%\.installed-manifest" (

@@ -1,7 +1,7 @@
 #!/bin/bash
 # ===========================================================================
-#  nana_image2 - one-click install for Codex (macOS, Apple Silicon/Intel)
-#  Copies the skill into ~/.codex/skills/nana_image2 and resolves Python:
+#  new_image2 - one-click install for Codex (macOS, Apple Silicon/Intel)
+#  Copies the skill into ~/.codex/skills/new_image2 and resolves Python:
 #    1. system python3 (3.9+)          -> developers keep their own Python
 #    2. the bundled private runtime     -> nothing to install for anyone else
 #  No config is modified; uninstall = double-click quick-uninstall-mac.command
@@ -10,7 +10,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-SKILL_NAME="nana_image2"
+SKILL_NAME="new_image2"
 DEST="$HOME/.codex/skills/$SKILL_NAME"
 
 say() { printf '  %s\n' "$*"; }
@@ -38,10 +38,10 @@ if [ -z "$PY" ]; then
     done
 fi
 [ -n "$PY" ] || die "no Python 3.9+ found and this package carries no bundled runtime.
-  Re-download the full macOS package (nana_image2-macos.zip) or install Python 3.9+."
+  Re-download the full macOS package (new_image2-macos.zip) or install Python 3.9+."
 
 # ---- sanity: the pieces we copy must exist here ----
-[ -f SKILL.md ] && [ -f scripts/nana_image2.py ] && [ -f scripts/psd_io.py ] \
+[ -f SKILL.md ] && [ -f scripts/new_image2.py ] && [ -f scripts/psd_io.py ] \
     || die "run this from the unpacked skill folder (SKILL.md must be next to it)."
 
 # ---- offline self-test before touching anything ----
@@ -50,7 +50,7 @@ if [ -d tests ]; then
         && ok "offline self-test passed" \
         || say "self-test failed - installing anyway; run tests manually to inspect"
 else
-    "$PY" -B scripts/nana_image2.py --help >/dev/null 2>&1 \
+    "$PY" -B scripts/new_image2.py --help >/dev/null 2>&1 \
         && ok "CLI smoke check passed" \
         || die "the CLI failed to run with the resolved interpreter."
 fi
@@ -68,8 +68,8 @@ fi
 ok "installed to $DEST"
 
 # ---- sibling skills ship in the same package ----
-INSTALLED="nana_image2"
-for pair in "raw-skill:nana_image2_raw" "psd-skill:nana_image2_psd"; do
+INSTALLED="new_image2"
+for pair in "raw-skill:new_image2_raw" "psd-skill:new_image2_psd"; do
     dir="${pair%%:*}"; name="${pair##*:}"
     if [ -f "$dir/SKILL.md" ]; then
         rm -rf "$HOME/.codex/skills/$name"
@@ -92,8 +92,8 @@ if [ -d vendor ]; then
         ok "vendored skill installed: $name"
     done
 fi
-PKG_VERSION="$(grep -m1 '^VERSION' scripts/nana_image2.py | cut -d'"' -f2)"
-{ echo "# nana_image2 distribution $PKG_VERSION - installed skill dirs:"; echo "$INSTALLED"; } \
+PKG_VERSION="$(grep -m1 '^VERSION' scripts/new_image2.py | cut -d'"' -f2)"
+{ echo "# new_image2 distribution $PKG_VERSION - installed skill dirs:"; echo "$INSTALLED"; } \
     > "$DEST/.installed-manifest"
 if [ -f VENDOR-VERSIONS.txt ]; then
     say "bundled third-party skills (frozen pins): see VENDOR-VERSIONS.txt in the package"
@@ -103,7 +103,7 @@ cat <<EOF
 
 ============================================================
  Done. Restart Codex, then try:
-     "用 nana_image2 生成一张 1024x1024 的橙色猫海报"
+     "用 new_image2 生成一张 1024x1024 的橙色猫海报"
      "把 poster.psd 的背景层导出来，换成夕阳背景再合成 PSD"
 
  Rollback: double-click quick-uninstall-mac.command

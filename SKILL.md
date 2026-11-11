@@ -1,5 +1,5 @@
 ---
-name: "nana_image2"
+name: "new_image2"
 description: "Generate or edit raster images through the current Codex custom provider or sub2api when the built-in image_gen tool is unavailable, missing, or blocked. Use for image assets and visual variants; do not use for SVG, HTML/CSS, diagrams, or other deterministic code-native visuals."
 ---
 
@@ -17,7 +17,7 @@ Use the bundled dependency-free client instead of the system `imagegen` CLI. It 
 
    Commands go through the bundled launcher (`scripts/run`, Windows `scripts\run.cmd`): it uses a system Python 3.9+ when present and otherwise the private runtime installed with the skill - no Python installation is required on the user's machine, and the launcher runs the interpreter with `-E -s` so developer environments (conda/pyenv) are never touched. On Python 3.9/3.10 the config parser falls back to a minimal TOML-subset reader; anything richer fails with a clear message.
 
-2. Beautify the user's request into a concise photographic prompt (see "Prompt handling"); verbatim requests belong to the sibling $nana_image2_raw skill.
+2. Beautify the user's request into a concise photographic prompt (see "Prompt handling"); verbatim requests belong to the sibling $new_image2_raw skill.
 3. Generate or edit exactly once, explicitly passing the same `--model <selected-model>` used for doctor. A user request to create/edit an image authorizes that call; diagnostics alone do not authorize a billed smoke test.
 4. Read the output carefully. When an explicit size was requested, the client prints a final JSON verdict line: if it says `"degraded": true`, the upstream accepted the request but returned a different size/model (known sub2api silent downgrade, issues #6120/#3302/#7119) — report the ACTUAL size to the user along with the verdict's advice instead of claiming success. Inspect the saved image with `view_image`. Retry only for a specific defect the user asked to fix.
 5. Report the model, the user's original words, the final prompt actually sent, and the absolute saved path. For project assets, save under the project's `output/imagegen/` or the user-named path.
@@ -31,7 +31,24 @@ Streaming rules (important, both are workaround-driven):
 
 This skill beautifies: expand the user's idea into a full photographic prompt using the five rules that fight the "AI look": (1) 光 one single light source, soft and scattered; (2) 瑕 give every object one imperfection - rust, cracks, folds, wilt; (3) 机 camera anchors (35mm, f/4, handheld, a named film stock); (4) 灰 "overall muted, highlights not blown, shadow detail retained" beats mood adjectives; (5) 粒 film grain/noise as a realism signal. HARD GUARDRAIL: beautify may restructure and add physical detail, but the subject, style and composition intent must come from the user's own words - never swap or "improve" what they asked for.
 
-When the user wants their prompt passed through EXACTLY as written (原样 / 逐字 / verbatim / as-is), that is the sibling skill's job: switch to `$nana_image2_raw` instead of changing modes here.
+When the user wants their prompt passed through EXACTLY as written (原样 / 逐字 / verbatim / as-is), that is the sibling skill's job: switch to `$new_image2_raw` instead of changing modes here.
+
+## Style directions (风格方向)
+
+Beautify picks ONE direction - the user's explicit choice wins; otherwise infer from the content; default to 写实纪实. Apply the direction's rules on top of the five base rules (光/瑕/机/灰/粒), and state which direction was used in the report.
+
+| # | Direction / 触发词 | Key rules beyond the base five |
+|---|---|---|
+| 1 | **写实纪实**（纪实/抓拍/documentary，默认） | 五条基础规则全套；35mm f/4 手持；自然光；不加戏剧化 |
+| 2 | **电影感**（电影/cinematic/剧照） | 宽画幅构图；一个主光+轮廓光；青橙/低饱和调色；浅景深；体积光雾 |
+| 3 | **商业产品**（产品/电商/product shot） | 无缝背景/纯色背景；柔光箱+反光板（金属高光有渐变）；100mm 微距；产品居中或三分；可加轻微倒影 |
+| 4 | **人像写真**（人像/肖像/portrait） | 85mm f/1.8；眼神光（catchlight）；保留皮肤纹理（雀斑/毛孔，禁磨皮）；背景分离虚化；自然姿态 |
+| 5 | **插画扁平**（插画/扁平/vector） | 关闭摄影锚点（不写相机/胶片）；有限配色 4-6 色；几何化的瑕疵感（手绘线条不闭合）；留白构图 |
+| 6 | **3D 渲染**（3D/渲染/C4D/render） | 材质描述（哑光/磨砂/次表面散射）；三点布光+软阴影；微噪点抗塑料感；octane 风格但不写引擎名 |
+| 7 | **国风水墨**（水墨/国画/工笔） | 大量留白；笔触干湿浓淡；墨分五色的灰阶；一枚朱印位置；生宣质感（边缘洇墨） |
+| 8 | **老照片胶片**（老照片/怀旧/复古/vintage） | 指定胶片型号（Kodak Gold 200 / Fuji Superia）；褪色偏色（黄青漂）；更强颗粒；白边划痕可选 |
+
+Rules that apply to ALL directions: the subject/composition intent stays the user's own words; one light logic; every object keeps one imperfection; report the chosen direction with the final prompt.
 
 ## Transport modes
 

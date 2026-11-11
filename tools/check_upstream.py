@@ -24,7 +24,7 @@ LIST = Path(__file__).resolve().parent / "upstream.json"
 
 def latest_tag(repo: str) -> str | None:
     url = f"https://api.github.com/repos/{repo}/releases/latest"
-    request = urllib.request.Request(url, headers={"User-Agent": "nana_image2-check-upstream",
+    request = urllib.request.Request(url, headers={"User-Agent": "new_image2-check-upstream",
                                                    "Accept": "application/vnd.github+json"})
     try:
         with urllib.request.urlopen(request, timeout=20) as response:

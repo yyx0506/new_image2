@@ -1,12 +1,12 @@
 #!/bin/bash
 # ===========================================================================
-#  nana_image2 - one-click rollback (macOS)
-#  Deletes ~/.codex/skills/nana_image2. Nothing else is touched:
+#  new_image2 - one-click rollback (macOS)
+#  Deletes ~/.codex/skills/new_image2. Nothing else is touched:
 #  the skill only ever READS the Codex config, so there is nothing to undo.
 # ===========================================================================
 set -euo pipefail
 
-SKILL_NAME="nana_image2"
+SKILL_NAME="new_image2"
 DEST="$HOME/.codex/skills/$SKILL_NAME"
 
 if [ -d "$DEST" ]; then
@@ -15,7 +15,7 @@ if [ -d "$DEST" ]; then
         # remove every skill this package installed (incl. frozen vendors)
         grep -v '^#' "$MANIFEST" | tr ' ' '\n' | while read -r name; do
             [ -z "$name" ] && continue
-            if [ "$name" = "nana_image2" ] || [ -d "$HOME/.codex/skills/$name" ]; then
+            if [ "$name" = "new_image2" ] || [ -d "$HOME/.codex/skills/$name" ]; then
                 rm -rf "$HOME/.codex/skills/$name"
                 echo "  [ok] removed skill: $name"
             fi

@@ -36,9 +36,9 @@ if _SCRIPT_DIR not in sys.path:
     sys.path.insert(0, _SCRIPT_DIR)
 import psd_io
 
-VERSION = "1.5.0"
-MANIFEST_ENV = "NANA_IMAGE2_MANIFEST"
-USER_AGENT = "codex-nana_image2/1.0"
+VERSION = "1.6.0"
+MANIFEST_ENV = "NEW_IMAGE2_MANIFEST"
+USER_AGENT = "codex-new_image2/1.0"
 DEFAULT_MODEL = "gpt-image-2.5-sunburst"
 IMAGE_25_MODELS = {"gpt-image-2.5-sunburst", "gpt-image-2.5-flare",
                    "gpt-image-2.5-sunburst-2026-09-08", "gpt-image-2.5-flare-2026-09-08"}
@@ -400,7 +400,7 @@ def save_response(result: dict[str, Any], paths: list[Path], requested_size: str
 
 
 def multipart(fields: dict[str, str], files: list[tuple[str, Path]]) -> tuple[bytes, str]:
-    boundary = "----nana_image2-" + uuid.uuid4().hex
+    boundary = "----new_image2-" + uuid.uuid4().hex
     body = bytearray()
     for name, value in fields.items():
         body.extend(f"--{boundary}\r\nContent-Disposition: form-data; name=\"{name}\"\r\n\r\n{value}\r\n".encode())
@@ -667,12 +667,12 @@ def _load_manifest(source: str) -> dict[str, Any]:
 
 
 def show_version(_args: argparse.Namespace) -> None:
-    print(json.dumps({"ok": True, "name": "nana_image2", "version": VERSION,
+    print(json.dumps({"ok": True, "name": "new_image2", "version": VERSION,
                       "python": sys.version.split()[0]}, ensure_ascii=False))
 
 
 def check_upgrade(args: argparse.Namespace) -> None:
-    source = args.manifest or os.environ.get(MANIFEST_ENV, "")
+    source = args.manifest or os.environ.get(MANIFEST_ENV) or os.environ.get("NANA_IMAGE2_MANIFEST", "")
     if not source:
         fail(f"No upgrade manifest configured. Pass --manifest URL/PATH or set ${MANIFEST_ENV} "
              "(the admin publishes it on the intranet).")
@@ -989,7 +989,7 @@ def parser() -> argparse.ArgumentParser:
 
     upgrade = commands.add_parser("upgrade", help="Check the INTRANET manifest for a newer package (never GitHub).")
     upgrade.add_argument("--manifest", default=None,
-                         help="Manifest URL or file path; default: $NANA_IMAGE2_MANIFEST.")
+                         help="Manifest URL or file path; default: $NEW_IMAGE2_MANIFEST.")
     upgrade.set_defaults(run=check_upgrade)
 
     listing = commands.add_parser("psd-layers", help="List the layers of a PSD file (offline, no provider access).")
