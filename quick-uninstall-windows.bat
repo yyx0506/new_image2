@@ -7,6 +7,9 @@ rem  nothing to undo.
 rem =========================================================================
 setlocal
 set "DEST=%USERPROFILE%\.codex\skills\new_image2"
+if exist "%USERPROFILE%\.codex\skills\.new_image2.install" (
+    set /p DEST=<"%USERPROFILE%\.codex\skills\.new_image2.install"
+)
 
 if exist "%DEST%" (
     if exist "%DEST%\.installed-manifest" (
@@ -23,6 +26,7 @@ if exist "%DEST%" (
         rmdir /s /q "%DEST%"
         echo   [ok] removed %DEST%
     )
+    del /q "%USERPROFILE%\.codex\skills\.new_image2.install" >nul 2>&1
 ) else (
     echo   %DEST% was not installed ^(nothing to do^).
 )

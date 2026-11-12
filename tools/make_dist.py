@@ -148,6 +148,12 @@ def build(layout: dict, runtimes: dict, output_dir: Path, vendors: list | None =
             for target, archive in runtimes.items():
                 print(f"  bundling {target}/ from {archive.name} ...")
                 extract_runtime(archive, pkg / target)
+        styles = sorted((ROOT / "skills-styles").glob("*/SKILL.md"))
+        if styles:
+            for skill in styles:
+                target = pkg / "style-skills" / skill.parent.name
+                target.mkdir(parents=True)
+                shutil.copy2(skill, target / "SKILL.md")
         for folder, name in (("skill-raw", "raw-skill"), ("skill-psd", "psd-skill")):
             skill = ROOT / folder / "SKILL.md"
             if skill.is_file():

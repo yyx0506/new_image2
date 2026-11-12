@@ -1,6 +1,6 @@
 ---
 name: "new_image2"
-description: "Generate or edit raster images through the current Codex custom provider or sub2api when the built-in image_gen tool is unavailable, missing, or blocked. Use for image assets and visual variants; do not use for SVG, HTML/CSS, diagrams, or other deterministic code-native visuals."
+description: "智能画图（默认）：AI 优化提示词后通过当前 Codex provider 生成/编辑图片，内置八大风格方向，适合绝大多数出图需求。Generate or edit raster images with AI-beautified prompts through the current Codex custom provider; use for image assets, not for SVG/HTML/code-native visuals."
 ---
 
 # Sub2API Image Generation
@@ -34,6 +34,8 @@ This skill beautifies: expand the user's idea into a full photographic prompt us
 When the user wants their prompt passed through EXACTLY as written (原样 / 逐字 / verbatim / as-is), that is the sibling skill's job: switch to `$new_image2_raw` instead of changing modes here.
 
 ## Style directions (风格方向)
+
+Dedicated sibling skills exist for direct selection (each with a Chinese description): $image-jishi 纪实摄影 / $image-dianying 电影感 / $image-chanpin 商业产品 / $image-renxiang 人像写真 / $image-chahua 插画扁平 / $image-3d 3D 渲染 / $image-shuimo 国风水墨 / $image-fugu 复古胶片. When the user names one of those skills, it handles everything; when they only describe content, THIS skill infers the direction itself using the table below.
 
 Beautify picks ONE direction - the user's explicit choice wins; otherwise infer from the content; default to 写实纪实. Apply the direction's rules on top of the five base rules (光/瑕/机/灰/粒), and state which direction was used in the report.
 

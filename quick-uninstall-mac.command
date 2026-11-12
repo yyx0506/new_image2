@@ -6,8 +6,8 @@
 # ===========================================================================
 set -euo pipefail
 
-SKILL_NAME="new_image2"
-DEST="$HOME/.codex/skills/$SKILL_NAME"
+DEST="$(cat "$HOME/.codex/skills/.new_image2.install" 2>/dev/null || true)"
+[ -n "$DEST" ] || DEST="$HOME/.codex/skills/new_image2"
 
 if [ -d "$DEST" ]; then
     MANIFEST="$DEST/.installed-manifest"
@@ -24,6 +24,7 @@ if [ -d "$DEST" ]; then
         rm -rf "$DEST"
         echo "  [ok] removed $DEST"
     fi
+    rm -f "$HOME/.codex/skills/.new_image2.install"
 else
     echo "  $DEST was not installed (nothing to do)."
 fi

@@ -1,6 +1,6 @@
 ---
 name: "new_image2_psd"
-description: "Dedicated PSD toolbox: inspect, split (export layers), and compose layered Photoshop files, optionally piping layers through AI image generation. Use when the user mentions psd/PSD/图层/拆图层/分层/合成 PSD or wants generated assets delivered as a layered file."
+description: "PSD 拆图/合成：查看图层、逐层导出 PNG、合成新分层 PSD，可与智能画图联动换层。用户提到 psd/图层/拆图层/合成 PSD 时使用。Layered Photoshop toolbox: inspect, split, compose."
 ---
 
 # new_image2_psd - PSD 拆解与合成工具箱

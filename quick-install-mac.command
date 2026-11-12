@@ -10,7 +10,19 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-SKILL_NAME="new_image2"
+# 安装时可自定义技能名: bash quick-install-mac.command --skill-name 名字
+# 默认 image -> 技能就是 $image / $image-raw / $image-psd + 8 个 $image-<风格> 技能
+SKILL_NAME="image"
+EXTRA_ARGS=""
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --skill-name) [ $# -ge 2 ] || die "--skill-name needs a value"; SKILL_NAME="$2"; shift 2 ;;
+        *) EXTRA_ARGS="$EXTRA_ARGS $1"; shift ;;
+    esac
+done
+case "$SKILL_NAME" in
+    ''|*[!A-Za-z0-9_-]*) die "skill name must be letters/digits/_/- only: $SKILL_NAME" ;;
+esac
 DEST="$HOME/.codex/skills/$SKILL_NAME"
 
 say() { printf '  %s\n' "$*"; }
@@ -67,18 +79,56 @@ if [ -d runtime ] || [ -d runtime-x64 ]; then
 fi
 ok "installed to $DEST"
 
-# ---- sibling skills ship in the same package ----
-INSTALLED="new_image2"
-for pair in "raw-skill:new_image2_raw" "psd-skill:new_image2_psd"; do
+# ---- sibling skills ship in the same package (names follow the base) ----
+INSTALLED="$SKILL_NAME"
+for pair in "raw-skill:${SKILL_NAME}-raw" "psd-skill:${SKILL_NAME}-psd"; do
     dir="${pair%%:*}"; name="${pair##*:}"
     if [ -f "$dir/SKILL.md" ]; then
         rm -rf "$HOME/.codex/skills/$name"
         mkdir -p "$HOME/.codex/skills/$name"
-        cp "$dir/SKILL.md" "$HOME/.codex/skills/$name/SKILL.md"
+        [ -n "$PY" ] && "$PY" - "$dir/SKILL.md" "$HOME/.codex/skills/$name/SKILL.md" "$SKILL_NAME" <<'PYREWRITE'
+import sys
+src, dst, base = sys.argv[1], sys.argv[2], sys.argv[3]
+text = open(src, encoding="utf-8").read()
+for old, new in (("new_image2_raw", base + "-raw"),
+                 ("new_image2_psd", base + "-psd"),
+                 ("new_image2", base)):
+    text = text.replace(old, new)
+open(dst, "w", encoding="utf-8").write(text)
+PYREWRITE
         INSTALLED="$INSTALLED $name"
         ok "installed sibling skill: $name"
     fi
 done
+# ---- style skills: 每个风格一个独立技能（名字固定 image-<风格>）----
+if [ -d style-skills ]; then
+    for skill in style-skills/*/; do
+        [ -f "$skill/SKILL.md" ] || continue
+        name="$(basename "$skill")"
+        rm -rf "$HOME/.codex/skills/$name"
+        mkdir -p "$HOME/.codex/skills/$name"
+        [ -n "$PY" ] && "$PY" - "$skill/SKILL.md" "$HOME/.codex/skills/$name/SKILL.md" "$SKILL_NAME" <<'PYREWRITE'
+import sys
+src, dst, base = sys.argv[1], sys.argv[2], sys.argv[3]
+open(dst, "w", encoding="utf-8").write(
+    open(src, encoding="utf-8").read().replace("new_image2", base))
+PYREWRITE
+        INSTALLED="$INSTALLED $name"
+    done
+    ok "installed 8 style skills (image-jishi / -dianying / -chanpin / -renxiang / -chahua / -3d / -shuimo / -fugu)"
+fi
+
+# 主技能的 SKILL.md 也改写成选定的名字（含对兄弟技能的引用）
+[ -n "$PY" ] && "$PY" - "$DEST/SKILL.md" "$SKILL_NAME" <<'PYREWRITE'
+import sys
+path, base = sys.argv[1], sys.argv[2]
+text = open(path, encoding="utf-8").read()
+for old, new in (("new_image2_raw", base + "-raw"),
+                 ("new_image2_psd", base + "-psd"),
+                 ("new_image2", base)):
+    text = text.replace(old, new)
+open(path, "w", encoding="utf-8").write(text)
+PYREWRITE
 
 # ---- frozen third-party skills (vendor/) each land as their own skill ----
 if [ -d vendor ]; then
@@ -95,6 +145,7 @@ fi
 PKG_VERSION="$(grep -m1 '^VERSION' scripts/new_image2.py | cut -d'"' -f2)"
 { echo "# new_image2 distribution $PKG_VERSION - installed skill dirs:"; echo "$INSTALLED"; } \
     > "$DEST/.installed-manifest"
+printf '%s\n' "$DEST" > "$HOME/.codex/skills/.new_image2.install"
 if [ -f VENDOR-VERSIONS.txt ]; then
     say "bundled third-party skills (frozen pins): see VENDOR-VERSIONS.txt in the package"
 fi

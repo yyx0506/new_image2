@@ -1,6 +1,6 @@
 ---
 name: "new_image2_raw"
-description: "Generate images through the current Codex provider with the user's prompt EXACTLY as written - no rewriting, no beautification, nothing added. Use when the user asks for 原样/逐字/不要改提示词/别美化/verbatim/as-is, or explicitly names this skill."
+description: "原样画图：用户提示词逐字透传，不改写、不美化、一个字不加。当用户说 原样/逐字/按我的原话/不要改提示词 时使用。Generate images with the user's prompt EXACTLY as written; verbatim mode."
 ---
 
 # new_image2 raw mode
